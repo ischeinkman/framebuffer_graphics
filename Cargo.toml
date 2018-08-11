@@ -1,0 +1,7 @@
+[package]
+name = "framebuffer_backend"
+version = "0.1.0"
+authors = ["ischeinkman <scheinkman.ilan@gmail.com>"]
+
+[dependencies]
+"piston2d-graphics" ="^0.26.0"
