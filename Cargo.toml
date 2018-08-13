@@ -1,5 +1,5 @@
 [package]
-name = "framebuffer"
+name = "piston2d-framebuffer_graphics"
 version = "0.1.0"
 authors = ["ischeinkman <scheinkman.ilan@gmail.com>"]
 
