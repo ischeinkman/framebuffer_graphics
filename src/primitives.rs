@@ -37,9 +37,9 @@ impl Triangle {
         let mut buf = [v1, v2, v3];
         buf.sort_unstable_by(|p1, p2| {
             match p1.y.cmp(&p2.y) {
-                // if u's are equal, use x
-                Ordering::Equal => p1.y.cmp(&p2.y),
-                x => x
+                // if y's are equal, use x
+                Ordering::Equal => p1.x.cmp(&p2.x),
+                cmp => cmp
             }
         });
         Triangle {
