@@ -3,5 +3,9 @@ name = "piston2d-framebuffer_graphics"
 version = "0.1.0"
 authors = ["ischeinkman <scheinkman.ilan@gmail.com>"]
 
+[lib]
+name = "framebuffer_graphics"
+path = "src/lib.rs"
+
 [dependencies]
 "piston2d-graphics" ="^0.26.0"
