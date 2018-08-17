@@ -1,4 +1,5 @@
 use std::slice;
+use std::ptr;
 
 use color::*;
 
@@ -35,15 +36,16 @@ impl RgbaBufferGraphics {
         let green = piston_color_channel_to_byte(color[1]);
         let blue = piston_color_channel_to_byte(color[2]);
         let alpha = piston_color_channel_to_byte(color[3]);
-        // pixels are stored in RGBA, so each pixel is 4 bytes
-        let slice = unsafe { slice::from_raw_parts_mut(self.buffer, self.width * self.height * 4) };
+        let color = [red, green, blue, alpha];
         let byte_index = pixel_index * 4;
-        slice[byte_index] = red;
-        slice[byte_index + 1] = green;
-        slice[byte_index + 2] = blue;
-        slice[byte_index + 3] = alpha;
+        for idx in 0 .. 4 {
+            unsafe {
+                let buff_idx = self.buffer.offset((byte_index + idx) as isize);
+                ptr::write(buff_idx, color[idx]);
+            }
+        }
     }
-    
+
     pub fn vertex_to_pixel_coords(&self, v: [f32; 2]) -> BufferPoint {
         let vx = v[0];
         let vy = v[1];
