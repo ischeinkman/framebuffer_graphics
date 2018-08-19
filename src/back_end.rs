@@ -31,15 +31,34 @@ impl RgbaBufferGraphics {
 
     #[inline]
     pub fn write_color(&mut self, pixel_index: usize, color: &types::Color) {
-        let red = piston_color_channel_to_byte(color[0]);
-        let green = piston_color_channel_to_byte(color[1]);
-        let blue = piston_color_channel_to_byte(color[2]);
-        let alpha = piston_color_channel_to_byte(color[3]);
-        let color = [red, green, blue, alpha];
+        let red_new = piston_color_channel_to_byte(color[0]);
+        let green_new = piston_color_channel_to_byte(color[1]);
+        let blue_new = piston_color_channel_to_byte(color[2]);
+        let alpha_new = piston_color_channel_to_byte(color[3]);
+            
         let byte_index = pixel_index * 4;
+        let pixel_loc = unsafe { self.buffer.offset(byte_index as isize) };
+
+        let color = if alpha_new != 255 {
+            let red_old : u8 = unsafe { ptr::read(pixel_loc.offset(0isize)) };
+            let green_old : u8 = unsafe { ptr::read(pixel_loc.offset(1isize)) };
+            let blue_old : u8 = unsafe { ptr::read(pixel_loc.offset(2isize)) };
+            let alpha_old : u8 = unsafe { ptr::read(pixel_loc.offset(3isize)) };
+
+            let alpha_new_frac = (alpha_new as f32)/(255f32);
+            let alpha_old_frac = 1.0 - alpha_new_frac;
+            
+            let red = ((red_new as f32 * alpha_new_frac) + (red_old as f32 * alpha_old_frac)) as u8;
+            let green = ((green_new as f32 * alpha_new_frac) + (green_old as f32 * alpha_old_frac)) as u8;
+            let blue = ((blue_new as f32 * alpha_new_frac) + (blue_old as f32 * alpha_old_frac)) as u8;
+            let alpha = if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
+            [red, green, blue, alpha]
+
+        } else { [red_new, green_new, blue_new, alpha_new] };
+
         for idx in 0 .. 4 {
             unsafe {
-                let buff_idx = self.buffer.offset((byte_index + idx) as isize);
+                let buff_idx = pixel_loc.offset(idx as isize);
                 ptr::write(buff_idx, color[idx]);
             }
         }
