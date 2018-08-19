@@ -1,4 +1,3 @@
-use std::slice;
 use std::ptr;
 
 use color::*;
