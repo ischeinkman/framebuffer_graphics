@@ -1,6 +1,7 @@
 use std::fmt;
 use std::cmp::Ordering;
-use graphics::types;
+use graphics::{types};
+use texture::RgbaTexture;
 
 use back_end::RgbaBufferGraphics;
 
@@ -97,6 +98,154 @@ impl Triangle {
                     }
                 }
             }
+        }
+    }
+}
+
+pub struct TextureTriangle<'tri> {
+    pub vertices : [BufferPoint ; 3],
+    pub texture_vertices : [BufferPoint ; 3],
+    pub texture : &'tri RgbaTexture,
+}
+
+impl <'tri> TextureTriangle<'tri> {
+    pub fn new<'a>(v1: (BufferPoint, BufferPoint), v2: (BufferPoint, BufferPoint), v3: (BufferPoint, BufferPoint),  texture : &'a RgbaTexture) -> TextureTriangle<'a> {
+        let mut buf = [v1, v2, v3];
+
+        //Sort in decreasing y, increasing x
+        buf.sort_unstable_by(|p1, p2| {
+            match p1.0.y.cmp(&p2.0.y) {
+                // if y's are equal, use x
+                Ordering::Equal => p1.0.x.cmp(&p2.0.x),
+
+                //Otherwise, reverse the sort
+                Ordering::Greater => Ordering::Less,
+                Ordering::Less => Ordering::Greater,
+            }
+        });
+        let verts = [buf[0].0, buf[1].0, buf[2].0];
+        let text_verts = [buf[0].1, buf[0].1, buf[2].1];
+
+        TextureTriangle {
+            vertices : verts,
+            texture_vertices : text_verts,
+            texture : texture
+        }
+    }
+    
+    pub fn render(&self, graphics: &mut RgbaBufferGraphics, _color: &types::Color) {
+       
+        // We map the texture to the framebuffer by first reinterpretting the framebuffer
+        // coordinate in terms of 2 basis vectors from the framebuffer triangle, 
+        // translating that to the equivalent basis for the texture's triangle, 
+        // and then reinterpretting those coordinates to the texture's regular coordinates. 
+
+        //First, we get signed integers to make things easier. 
+        let v1_x = self.vertices[0].x as i64; 
+        let v1_y = self.vertices[0].y as i64; 
+        let v2_x = self.vertices[1].x as i64; 
+        let v2_y = self.vertices[1].y as i64; 
+        let v3_x = self.vertices[2].x as i64; 
+        let v3_y = self.vertices[2].y as i64; 
+
+        let t1_x = self.texture_vertices[0].x as i64;
+        let t1_y = self.texture_vertices[0].y as i64;
+        let t2_x = self.texture_vertices[1].x as i64;
+        let t2_y = self.texture_vertices[1].y as i64;
+        let t3_x = self.texture_vertices[2].x as i64;
+        let t3_y = self.texture_vertices[2].y as i64;
+
+        // The coordinates for the framebuffer triangle's basis vectors
+        let va_x = v1_x - v3_y;
+        let va_y = v1_y - v3_y;
+        let vb_x = v2_x - v3_y;
+        let vb_y = v2_y - v3_y;
+
+        // the coordinates of the texture triangle's basis vectors
+        let ta_x = t1_x - t3_y;
+        let ta_y = t1_y - t3_y;
+        let tb_x = t2_x - t3_y;
+        let tb_y = t2_y - t3_y;
+
+        // This value represents the square magnitude of one of the framebuffer's triangle's vector space  
+        let mag2_va = va_x * va_x + va_y * va_y;
+        
+        // This value represents the square magnitude of the other of the framebuffer's triangle's vector space  
+        let mag2_vb = vb_x * vb_x + vb_y * vb_y;
+
+        // We treat the third vertice of both the texture triangle and the framebuffer triangle as 
+        // the origin of our new vector space. Therefore it is also useful to pre-calculate some related dot products
+        // so we aren't doing it per-pixel. 
+        let mag2_v3 = v3_x * v3_x + v3_y * v3_y;
+        let v1_dot_v3 = v1_x * v3_x + v1_y + v3_y; 
+        let v2_dot_v3 = v2_x * v3_x + v2_y + v3_y;
+
+
+        // This is the closure that maps the framebuffer coordinate to the texture coordinate via a forward and inverse 
+        // projection. 
+        let mapper = | framebuffer_x : usize, framebuffer_y : usize | {
+
+            let x = framebuffer_x as i64; 
+            let y = framebuffer_y as i64;
+
+            // These are the coefficient for the basis vectors in the texture's triangle space, 
+            // derived from projecting (x, y) onto va and vb and then scaling by another multiple of the basis's lengths
+            // so we maintain streching.
+            // Note that these will be scaled down by the mag2's of the triangle basis vectors when we multiply later 
+            // to avoid any fractional issues. 
+            let coeff_a = mag2_v3 - v1_dot_v3 + va_x * x + va_y * y;
+            let coeff_b = mag2_v3 - v2_dot_v3 + vb_x * x + vb_y * y;
+
+            let x_component = (coeff_a * ta_x)/mag2_va + (coeff_b * tb_x)/mag2_vb + t3_x;
+            let y_component = (coeff_a * ta_y)/mag2_va + (coeff_b * tb_y)/mag2_vb + t3_y;
+
+
+            (x_component as u32, y_component as u32)
+        };
+
+        //Same algorithm as the other triangle, only replacing the color with the mapping function.
+
+        let edges = [
+            (self.vertices[2], self.vertices[1]),
+            (self.vertices[2], self.vertices[0]),
+            (self.vertices[1], self.vertices[0]),
+        ];
+        for i in 0..edges.len() {
+
+            let edge = edges[i];
+            if edge.0.y == edge.1.y {
+                for x in (edge.0.x)..(edge.1.x + 1) {
+                    let pixel_index = graphics.coords_to_pixel_index(&BufferPoint::new(x, edge.0.y));
+                    let pixel_coords = mapper(x, edge.0.y);
+                    let clr = self.texture.get_pixel(pixel_coords.0, pixel_coords.1);
+                    graphics.write_color_bytes(pixel_index, clr);
+                }
+                continue
+            }
+
+            for j in (i + 1)..edges.len() {
+                let other_edge = edges[j];
+                if other_edge.0.y == other_edge.1.y {
+                    continue
+                }
+                let overlap_y_start = other_edge.0.y;
+                let overlap_y_end = edge.1.y.min(other_edge.1.y);
+                let edge_1_inv_slope = (edge.1.x as f64 - edge.0.x as f64) / (edge.1.y as f64 - edge.0.y as f64);
+                let edge_2_inv_slope = (other_edge.1.x as f64 - other_edge.0.x as f64) / (other_edge.1.y as f64 - other_edge.0.y as f64);
+                for y in overlap_y_start..(overlap_y_end + 1) {
+                    let edge_1_x = (edge.0.x as f64 + ((y - edge.0.y) as f64 * edge_1_inv_slope)).round() as usize;
+                    let edge_2_x = (other_edge.0.x as f64 + ((y - other_edge.0.y) as f64 * edge_2_inv_slope)).round() as usize;
+                    let start_x = edge_1_x.min(edge_2_x);
+                    let end_x = edge_1_x.max(edge_2_x);
+                    for x in start_x..(end_x + 1) {
+                        let pixel_index = graphics.coords_to_pixel_index(&BufferPoint::new(x, y));
+                        let pixel_coords = mapper(x, edge.0.y);
+                        let clr = self.texture.get_pixel(pixel_coords.0, pixel_coords.1);
+                        graphics.write_color_bytes(pixel_index, clr);
+                    }
+                }
+            }
+
         }
     }
 }

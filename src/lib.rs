@@ -3,11 +3,11 @@ extern crate graphics;
 
 mod back_end;
 
-mod color;
+mod texture;
 
 mod primitives;
 
 pub use back_end::{RgbaBufferGraphics};
 
-pub use color::RgbaTexture;
+pub use texture::RgbaTexture;
 

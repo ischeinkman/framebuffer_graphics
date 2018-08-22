@@ -1,10 +1,10 @@
 use std::ptr;
 
-use color::*;
+use texture::*;
 
 use graphics::{self, types};
 
-use primitives::{BufferPoint, Triangle};
+use primitives::{BufferPoint, Triangle, TextureTriangle};
 
 pub struct RgbaBufferGraphics {
     width: usize,
@@ -30,11 +30,23 @@ impl RgbaBufferGraphics {
     }
 
     #[inline]
-    pub fn write_color(&mut self, pixel_index: usize, color: &types::Color) {
-        let red_new = piston_color_channel_to_byte(color[0]);
-        let green_new = piston_color_channel_to_byte(color[1]);
-        let blue_new = piston_color_channel_to_byte(color[2]);
-        let alpha_new = piston_color_channel_to_byte(color[3]);
+    pub fn write_color(&mut self, pixel_index : usize, color : &types::Color) {
+        let converted_color = [
+            piston_color_channel_to_byte(color[0]),
+            piston_color_channel_to_byte(color[1]),
+            piston_color_channel_to_byte(color[2]),
+            piston_color_channel_to_byte(color[3]),
+        ];
+        self.write_color_bytes(pixel_index, converted_color);
+    }
+
+    #[inline]
+    pub fn write_color_bytes(&mut self, pixel_index: usize, color: [u8 ; 4]) {
+
+        let red_new = color[0];
+        let green_new = color[1];
+        let blue_new = color [2];
+        let alpha_new = color[3];
             
         let byte_index = pixel_index * 4;
         let pixel_loc = unsafe { self.buffer.offset(byte_index as isize) };
@@ -115,7 +127,33 @@ impl graphics::Graphics for RgbaBufferGraphics {
             }
         })
     }
-    fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, _color: &[f32; 4], _texture: &<Self as graphics::Graphics>::Texture, _f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
-        //TODO:this
+    fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], texture: &<Self as graphics::Graphics>::Texture, mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
+        f(&mut |verts: &[[f32; 2]], text_verts : &[[f32 ; 2]]| {
+            for idx in 0..verts.len() / 3 {
+
+                let v1 = verts[idx * 3 + 0];
+                let v1_pt = self.vertex_to_pixel_coords(v1);
+
+                let v2 = verts[idx * 3 + 1];
+                let v2_pt = self.vertex_to_pixel_coords(v2);
+                
+                let v3 = verts[idx * 3 + 1];
+                let v3_pt = self.vertex_to_pixel_coords(v3);
+
+
+                let t1 = text_verts[idx * 3 + 0];
+                let t1_pt = texture.vertex_to_pixel_coords(t1);
+
+                let t2 = text_verts[idx * 3 + 1];
+                let t2_pt = texture.vertex_to_pixel_coords(t2);
+                
+                let t3 = text_verts[idx * 3 + 1];
+                let t3_pt = texture.vertex_to_pixel_coords(t3);
+
+                let tri = TextureTriangle::new((v1_pt, t1_pt), (v2_pt, t2_pt), (v3_pt, t3_pt), &texture);
+
+                tri.render(self, color);
+            }
+        })
     }
 }
