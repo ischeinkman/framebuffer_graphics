@@ -1,6 +1,14 @@
 use graphics;
 use primitives::BufferPoint;
 
+use std::error::Error;
+use std::path::Path;
+
+extern crate image;
+use self::image::{DynamicImage, RgbaImage, ImageRgba8};
+
+use graphics::types;
+
 /// Maps an f32 in [0_f32, 1.0] to [0_u8, 255]
 #[inline]
 pub fn piston_color_channel_to_byte(f: f32) -> u8 {
@@ -32,6 +40,25 @@ impl RgbaTexture {
             height : height,
             buffer : buff,
         }
+    }
+
+    pub fn from_piston_image(rgba_image : RgbaImage) -> RgbaTexture {
+        let width = rgba_image.width();
+        let height = rgba_image.height();
+
+        let buff : Vec<u8> = rgba_image.into_raw();
+
+        RgbaTexture {
+            width : width, 
+            height : height,
+            buffer : buff
+        }
+    }
+
+    pub fn from_file_path(path : impl AsRef<Path>) -> Result<RgbaTexture, String> {
+        let found_image : DynamicImage = image::open(path).map_err(|e| e.description().to_owned())?;
+        let rgba_image : RgbaImage = if let ImageRgba8(im) = found_image { im } else { found_image.to_rgba() };
+        Ok(RgbaTexture::from_piston_image(rgba_image))
     }
 
 
@@ -77,6 +104,20 @@ impl RgbaTexture {
         let a = self.buffer[begin_idx + 3];
 
         [r, g, b, a]
+    }
+
+    pub fn put_pixel(&mut self, x : u32, y : u32, color : &types::Color) { 
+        let red = piston_color_channel_to_byte(color[0]);
+        let blue = piston_color_channel_to_byte(color[1]);
+        let green = piston_color_channel_to_byte(color[2]);
+        let alpha = piston_color_channel_to_byte(color[3]);
+
+        let index = x as usize * y as usize *4;
+
+        self.buffer[index + 0] = red;
+        self.buffer[index + 1] = blue;
+        self.buffer[index + 2] = green;
+        self.buffer[index + 3] = alpha;
     }
 }
 

@@ -9,3 +9,4 @@ path = "src/lib.rs"
 
 [dependencies]
 "piston2d-graphics" ="^0.26.0"
+"image" = "0.19"
