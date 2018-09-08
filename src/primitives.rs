@@ -159,47 +159,53 @@ impl <'tri> TextureTriangle<'tri> {
         println!("Mapping point ({}, {}) to texture point ({}, {}).", v2_x, v2_y, t2_x, t2_y);
         println!("Mapping point ({}, {}) to texture point ({}, {}).", v3_x, v3_y, t3_x, t3_y);
 
-        // The coordinates for the framebuffer triangle's basis vectors
-        let va_x = v1_x - v3_x;
-        let va_y = v1_y - v3_y;
-        let vb_x = v2_x - v3_x;
-        let vb_y = v2_y - v3_y;
+        let mapper = if
+            v1_x == t1_x && v1_y == t1_y &&
+            v2_x == t2_x && v2_y == t2_y &&
+            v3_x == t3_x && v3_y == t3_y
+        {
+            None
+        } else {
+            // The coordinates for the framebuffer triangle's basis vectors
+            let va_x = v1_x - v3_x;
+            let va_y = v1_y - v3_y;
+            let vb_x = v2_x - v3_x;
+            let vb_y = v2_y - v3_y;
 
-        println!("Frambuffer basis: ({}, {}) x ({}, {}) at origin ({}, {})", va_x, va_y, vb_x, vb_y, v3_x, v3_y);
+            println!("Frambuffer basis: ({}, {}) x ({}, {}) at origin ({}, {})", va_x, va_y, vb_x, vb_y, v3_x, v3_y);
 
-        // the coordinates of the texture triangle's basis vectors
-        let ta_x = t1_x - t3_x;
-        let ta_y = t1_y - t3_y;
-        let tb_x = t2_x - t3_x;
-        let tb_y = t2_y - t3_y;
-        
-        println!("Texture basis: ({}, {}) x ({}, {}) at origin ({}, {})", ta_x, ta_y, tb_x, tb_y, t3_x, t3_y);
-
-        let mapper = | framebuffer_x : usize, framebuffer_y : usize | {
+            // the coordinates of the texture triangle's basis vectors
+            let ta_x = t1_x - t3_x;
+            let ta_y = t1_y - t3_y;
+            let tb_x = t2_x - t3_x;
+            let tb_y = t2_y - t3_y;
             
-            println!("Mapping point ({}, {})", framebuffer_x, framebuffer_y);
+            println!("Texture basis: ({}, {}) x ({}, {}) at origin ({}, {})", ta_x, ta_y, tb_x, tb_y, t3_x, t3_y);
 
-            let a_coeff_bottom = (va_x * va_x + va_y + va_y) as f64;
-            let a_coeff_top = (va_x * (framebuffer_x as i64 - v3_x) + va_y * (framebuffer_y as i64 - v3_y)) as f64;
-            let a_coeff = a_coeff_top/a_coeff_bottom;
+            Some(move |framebuffer_x : usize, framebuffer_y : usize | {
+                
+                let a_coeff_bottom = (va_x * va_x + va_y + va_y) as f64;
+                let a_coeff_top = (va_x * (framebuffer_x as i64 - v3_x) + va_y * (framebuffer_y as i64 - v3_y)) as f64;
+                let a_coeff = a_coeff_top/a_coeff_bottom;
 
-            println!("Got first term coefficient of {}.", a_coeff);
-            
-            let b_coeff_bottom = (vb_x * vb_x + vb_y + vb_y) as f64;
-            let b_coeff_top = (vb_x * (framebuffer_x as i64 - v3_x) + vb_y * (framebuffer_y as i64 - v3_y)) as f64;
-            let b_coeff = b_coeff_top/b_coeff_bottom;
-            
-            println!("Got second term coefficient of {}.", b_coeff);
+                let b_coeff_bottom = (vb_x * vb_x + vb_y + vb_y) as f64;
+                let b_coeff_top = (vb_x * (framebuffer_x as i64 - v3_x) + vb_y * (framebuffer_y as i64 - v3_y)) as f64;
+                let b_coeff = b_coeff_top/b_coeff_bottom;
+                
+
+                let x_component = a_coeff.ceil() as i64 * ta_x + b_coeff.ceil() as i64 * tb_x + t3_x;
+                let y_component = a_coeff.ceil() as i64 * ta_y + b_coeff.ceil() as i64 * tb_y + t3_y;
+
+                if x_component < 0 || y_component < 0 || a_coeff.is_nan() || b_coeff.is_nan() {
+                    println!("Invalid output: ({}, {}) produced coeffs {} and {} making output ({}, {})", framebuffer_x, framebuffer_y, a_coeff, b_coeff, x_component, y_component);
+                }
 
 
-            let x_component = a_coeff.ceil() as i64 * ta_x + b_coeff.ceil() as i64 * tb_x + t3_x;
-            let y_component = a_coeff.ceil() as i64 * ta_y + b_coeff.ceil() as i64 * tb_y + t3_y;
+                (x_component as u32, y_component as u32)
+            })
 
-            println!("Mapped ({}, {}) to texture point ({}, {})", framebuffer_x, framebuffer_y, x_component, y_component);
-
-
-            (x_component as u32, y_component as u32)
         };
+
 
         //Same algorithm as the other triangle, only replacing the color with the mapping function.
 
@@ -214,7 +220,10 @@ impl <'tri> TextureTriangle<'tri> {
             if edge.0.y == edge.1.y {
                 for x in (edge.0.x)..(edge.1.x + 1) {
                     let pixel_index = graphics.coords_to_pixel_index(&BufferPoint::new(x, edge.0.y));
-                    let pixel_coords = mapper(x, edge.0.y);
+                    let pixel_coords = match mapper {
+                        Some(f) => f(x, edge.0.y),
+                        None => (x as u32, edge.0.y as u32)
+                    };
                     let clr = self.texture.get_pixel(pixel_coords.0, pixel_coords.1);
                     graphics.write_color_bytes(pixel_index, clr);
                 }
@@ -237,7 +246,10 @@ impl <'tri> TextureTriangle<'tri> {
                     let end_x = edge_1_x.max(edge_2_x);
                     for x in start_x..(end_x + 1) {
                         let pixel_index = graphics.coords_to_pixel_index(&BufferPoint::new(x, y));
-                        let pixel_coords = mapper(x, edge.0.y);
+                        let pixel_coords = match mapper {
+                            Some(f) => f(x, edge.0.y),
+                            None => (x as u32, edge.0.y as u32)
+                        };
                         let clr = self.texture.get_pixel(pixel_coords.0, pixel_coords.1);
                         graphics.write_color_bytes(pixel_index, clr);
                     }
