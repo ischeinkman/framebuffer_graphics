@@ -126,17 +126,14 @@ impl RgbaBufferGraphics {
 
         let alpha_old : u8 = unsafe { ptr::read(pixel_loc.offset(3isize)) };
         let color = if alpha_new != 255 && alpha_old != 0{
-            let red_old : u8 = unsafe { ptr::read(pixel_loc.offset(0isize)) };
+            let red_old : u8 = unsafe { ptr::read(pixel_loc) };
             let green_old : u8 = unsafe { ptr::read(pixel_loc.offset(1isize)) };
             let blue_old : u8 = unsafe { ptr::read(pixel_loc.offset(2isize)) };
 
-            let alpha_new_frac = (alpha_new as f32)/(255f32);
-            let alpha_old_frac = 1.0 - alpha_new_frac;
-            
-            let red = ((red_new as f32 * alpha_new_frac) + (red_old as f32 * alpha_old_frac)) as u8;
-            let green = ((green_new as f32 * alpha_new_frac) + (green_old as f32 * alpha_old_frac)) as u8;
-            let blue = ((blue_new as f32 * alpha_new_frac) + (blue_old as f32 * alpha_old_frac)) as u8;
-            let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
+            let red = ((red_new as u16 * alpha_new as u16 + red_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
+            let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
+            let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
+            let alpha = 128;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
             [red, green, blue, alpha]
 
         } else { [red_new, green_new, blue_new, alpha_new] };
@@ -158,6 +155,7 @@ impl RgbaBufferGraphics {
 impl graphics::Graphics for RgbaBufferGraphics {
     type Texture = RgbaTexture;
     fn clear_color(&mut self, color: types::Color) {
+        println!("Clearing with color {:?}", color);
         let num_pixels = self.width * self.height;
         for i in 0..num_pixels {
             self.write_color(i, &color);
@@ -167,6 +165,7 @@ impl graphics::Graphics for RgbaBufferGraphics {
         //TODO:this
     }
     fn tri_list<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]])) {
+        println!("Drawing with color: {:?}", color);
         f(&mut |verts: &[[f32; 2]]| {
             for t in 0..verts.len() / 3 {
                 let v1 = verts[t * 3];
@@ -180,66 +179,20 @@ impl graphics::Graphics for RgbaBufferGraphics {
         })
     }
     fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], texture: &<Self as graphics::Graphics>::Texture, mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
+        println!("Drawing texture with color: {:?}", color);
         
         f(&mut |verts: &[[f32; 2]], text_verts : &[[f32 ; 2]]| {
-            let mut min_x = f32::MAX;
-            let mut min_y = f32::MAX;
-            let mut max_x = f32::MIN;
-            let mut max_y = f32::MIN;
             for idx in 0..verts.len() / 3 {
 
                 let v1 = verts[idx * 3 + 0];
                 let v1_pt = self.vertex_to_pixel_coords(v1);
 
-                if v1[0] < min_x {
-                    min_x = v1[0];
-                }
-                else if v1[0] > max_x {
-                    max_x = v1[0];
-                }
-
-                if v1[1] < min_y {
-                    min_y = v1[1];
-                }
-                else if v1[1] > max_y {
-                    max_y = v1[1];
-                }
-
                 let v2 = verts[idx * 3 + 1];
                 let v2_pt = self.vertex_to_pixel_coords(v2);
-                
-                if v2[0] < min_x {
-                    min_x = v2[0];
-                }
-                else if v2[0] > max_x {
-                    max_x = v2[0];
-                }
-
-                if v2[1] < min_y {
-                    min_y = v2[1];
-                }
-                else if v2[1] > max_y {
-                    max_y = v2[1];
-                }
                 
                 let v3 = verts[idx * 3 + 2];
                 let v3_pt = self.vertex_to_pixel_coords(v3);
                 
-                if v1[0] < min_x {
-                    min_x = v1[0];
-                }
-                else if v1[0] > max_x {
-                    max_x = v1[0];
-                }
-
-                if v1[1] < min_y {
-                    min_y = v1[1];
-                }
-                else if v1[1] > max_y {
-                    max_y = v1[1];
-                }
-
-
                 let t1 = text_verts[idx * 3 + 0];
                 let t1_pt = texture.vertex_to_pixel_coords(t1);
 
