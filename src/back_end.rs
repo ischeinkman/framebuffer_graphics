@@ -152,6 +152,12 @@ impl graphics::Graphics for RgbaBufferGraphics {
 
                 let tri = TextureTriangle::new((v1_pt, t1_pt), (v2_pt, t2_pt), (v3_pt, t3_pt), &texture);
 
+                println!("{:?}->{:?}=>{:?}, {:?}->{:?}=>{:?}, {:?}->{:?}=>{:?}", 
+                    idx * 3 + 0, verts[idx * 3 + 0], text_verts[idx * 3 + 0],
+                    idx * 3 + 1, verts[idx * 3 + 1], text_verts[idx * 3 + 1],
+                    idx * 3 + 2, verts[idx * 3 + 2], text_verts[idx * 3 + 2]
+                );
+
                 tri.render(self, color);
             }
         })

@@ -110,7 +110,6 @@ pub struct TextureTriangle<'tri> {
 
 impl <'tri> TextureTriangle<'tri> {
     pub fn new<'a>(v1: (BufferPoint, BufferPoint), v2: (BufferPoint, BufferPoint), v3: (BufferPoint, BufferPoint),  texture : &'a RgbaTexture) -> TextureTriangle<'a> {
-        println!("Creating texture triangle from points: {:?}, {:?}, {:?}.", v1, v2, v3);
         let mut buf = [v1, v2, v3];
 
         //Sort in decreasing y, increasing x
@@ -132,7 +131,6 @@ impl <'tri> TextureTriangle<'tri> {
             texture_vertices : text_verts,
             texture : texture
         };
-        println!("Creating triangle with verts: {:?} -> {:?}", verts, text_verts);
         retval
     }
     
