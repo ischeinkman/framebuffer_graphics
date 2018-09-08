@@ -7,7 +7,7 @@ mod texture;
 
 mod primitives;
 
-pub use back_end::{RgbaBufferGraphics};
+pub use back_end::{RgbaBufferGraphics, CoordinateTransform};
 
 pub use texture::RgbaTexture;
 
