@@ -110,6 +110,7 @@ pub struct TextureTriangle<'tri> {
 
 impl <'tri> TextureTriangle<'tri> {
     pub fn new<'a>(v1: (BufferPoint, BufferPoint), v2: (BufferPoint, BufferPoint), v3: (BufferPoint, BufferPoint),  texture : &'a RgbaTexture) -> TextureTriangle<'a> {
+        println!("Creating texture triangle from points: {:?}, {:?}, {:?}.", v1, v2, v3);
         let mut buf = [v1, v2, v3];
 
         //Sort in decreasing y, increasing x
@@ -126,11 +127,13 @@ impl <'tri> TextureTriangle<'tri> {
         let verts = [buf[0].0, buf[1].0, buf[2].0];
         let text_verts = [buf[0].1, buf[1].1, buf[2].1];
 
-        TextureTriangle {
+        let retval = TextureTriangle {
             vertices : verts,
             texture_vertices : text_verts,
             texture : texture
-        }
+        };
+        println!("Creating triangle with verts: {:?} -> {:?}", verts, text_verts);
+        retval
     }
     
     pub fn render(&self, graphics: &mut RgbaBufferGraphics, _color: &types::Color) {
@@ -155,9 +158,14 @@ impl <'tri> TextureTriangle<'tri> {
         let t3_x = self.texture_vertices[2].x as i64;
         let t3_y = self.texture_vertices[2].y as i64;
 
-        println!("Mapping point ({}, {}) to texture point ({}, {}).", v1_x, v1_y, t1_x, t1_y);
-        println!("Mapping point ({}, {}) to texture point ({}, {}).", v2_x, v2_y, t2_x, t2_y);
-        println!("Mapping point ({}, {}) to texture point ({}, {}).", v3_x, v3_y, t3_x, t3_y);
+        // If the "triangle" is just a single mapped point, draw the point immediatly. 
+        if v1_x == v2_x && v2_x == v3_x && v1_y == v2_y && v2_y == v3_y {
+            let pixel_index = graphics.coords_to_pixel_index(&BufferPoint::new(self.vertices[0].x, self.vertices[0].y));
+            let pixel_coords = (t1_x as u32, t1_y as u32);
+            let clr = self.texture.get_pixel(pixel_coords.0, pixel_coords.1);
+            graphics.write_color_bytes(pixel_index, clr);
+
+        }
 
         let mapper = if
             v1_x == t1_x && v1_y == t1_y &&
@@ -172,16 +180,12 @@ impl <'tri> TextureTriangle<'tri> {
             let vb_x = v2_x - v3_x;
             let vb_y = v2_y - v3_y;
 
-            println!("Frambuffer basis: ({}, {}) x ({}, {}) at origin ({}, {})", va_x, va_y, vb_x, vb_y, v3_x, v3_y);
-
             // the coordinates of the texture triangle's basis vectors
             let ta_x = t1_x - t3_x;
             let ta_y = t1_y - t3_y;
             let tb_x = t2_x - t3_x;
             let tb_y = t2_y - t3_y;
             
-            println!("Texture basis: ({}, {}) x ({}, {}) at origin ({}, {})", ta_x, ta_y, tb_x, tb_y, t3_x, t3_y);
-
             Some(move |framebuffer_x : usize, framebuffer_y : usize | {
                 
                 let a_coeff_bottom = (va_x * va_x + va_y + va_y) as f64;
@@ -195,11 +199,6 @@ impl <'tri> TextureTriangle<'tri> {
 
                 let x_component = a_coeff.ceil() as i64 * ta_x + b_coeff.ceil() as i64 * tb_x + t3_x;
                 let y_component = a_coeff.ceil() as i64 * ta_y + b_coeff.ceil() as i64 * tb_y + t3_y;
-
-                if x_component < 0 || y_component < 0 || a_coeff.is_nan() || b_coeff.is_nan() {
-                    println!("Invalid output: ({}, {}) produced coeffs {} and {} making output ({}, {})", framebuffer_x, framebuffer_y, a_coeff, b_coeff, x_component, y_component);
-                }
-
 
                 (x_component as u32, y_component as u32)
             })
