@@ -124,7 +124,7 @@ impl <'tri> TextureTriangle<'tri> {
             }
         });
         let verts = [buf[0].0, buf[1].0, buf[2].0];
-        let text_verts = [buf[0].1, buf[0].1, buf[2].1];
+        let text_verts = [buf[0].1, buf[1].1, buf[2].1];
 
         TextureTriangle {
             vertices : verts,

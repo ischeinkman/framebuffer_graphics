@@ -137,7 +137,7 @@ impl graphics::Graphics for RgbaBufferGraphics {
                 let v2 = verts[idx * 3 + 1];
                 let v2_pt = self.vertex_to_pixel_coords(v2);
                 
-                let v3 = verts[idx * 3 + 1];
+                let v3 = verts[idx * 3 + 2];
                 let v3_pt = self.vertex_to_pixel_coords(v3);
 
 
@@ -147,7 +147,7 @@ impl graphics::Graphics for RgbaBufferGraphics {
                 let t2 = text_verts[idx * 3 + 1];
                 let t2_pt = texture.vertex_to_pixel_coords(t2);
                 
-                let t3 = text_verts[idx * 3 + 1];
+                let t3 = text_verts[idx * 3 + 2];
                 let t3_pt = texture.vertex_to_pixel_coords(t3);
 
                 let tri = TextureTriangle::new((v1_pt, t1_pt), (v2_pt, t2_pt), (v3_pt, t3_pt), &texture);
