@@ -5,11 +5,61 @@ use texture::*;
 use graphics::{self, types};
 
 use primitives::{BufferPoint, Triangle, TextureTriangle};
+use std::f32;
+
+pub struct CoordinateTransform {
+    matrix_transform : [f32 ; 4],
+    translation : [f32; 2],
+}
+
+impl CoordinateTransform {
+
+    pub const IDENTITY : CoordinateTransform = CoordinateTransform {
+        matrix_transform : [1.0, 0.0, 0.0, 1.0],
+        translation : [0.0, 0.0]
+    };
+
+    pub fn new(matrix_transform : [f32 ; 4], translation : [f32 ; 2]) -> CoordinateTransform {
+        CoordinateTransform {
+            matrix_transform, 
+            translation
+        }
+    }
+
+    pub fn apply_to_bufferpoint(&self, vect : &[f32 ; 2]) -> BufferPoint {
+        let x = vect[0];
+        let y = vect[1];
+
+        let x_out = x * self.matrix_transform[0] + y * self.matrix_transform[1] + self.translation[0]; 
+        let y_out = x * self.matrix_transform[2] + y * self.matrix_transform[3] + self.translation[1];
+
+        BufferPoint::new(x_out as usize, y_out as usize) 
+    }
+
+    pub fn with_origin(&self, new_origin : &[f32 ; 2]) -> CoordinateTransform {
+        CoordinateTransform {
+            matrix_transform : self.matrix_transform,
+            translation : [self.translation[0] - new_origin[0], self.translation[1] - new_origin[1]]
+        }
+    }
+
+    pub fn with_scale(&self, x_scale : f32, y_scale : f32) -> CoordinateTransform {
+        CoordinateTransform {
+            matrix_transform : [
+                self.matrix_transform[0] * x_scale, self.matrix_transform[1] * x_scale,
+                self.matrix_transform[2] * y_scale, self.matrix_transform[3] * y_scale
+            ],
+            translation : self.translation,
+        }
+    }
+
+}
 
 pub struct RgbaBufferGraphics {
     width: usize,
     height: usize,
     buffer: *mut u8,
+    transform : CoordinateTransform,
 }
 
 
@@ -19,8 +69,20 @@ impl RgbaBufferGraphics {
             width,
             height,
             buffer,
+            transform : CoordinateTransform::IDENTITY,
         }
     }
+
+    pub fn with_transform(width: usize, height: usize, buffer: *mut u8, transform : CoordinateTransform) -> RgbaBufferGraphics {
+        RgbaBufferGraphics {
+            width,
+            height,
+            buffer,
+            transform,
+        }
+    }
+
+
 
     #[inline]
     pub fn coords_to_pixel_index(&self, p: &BufferPoint) -> usize {
@@ -77,28 +139,7 @@ impl RgbaBufferGraphics {
     }
 
     pub fn vertex_to_pixel_coords(&self, v: [f32; 2]) -> BufferPoint {
-        let vx = v[0];
-        let vy = v[1];
-        // it seems that the vertices are in a space where 0,0 is the center of the screen and
-        // negative y is up.
-        // translate into pixel where 0,0 is top left
-        let x = if vx < -(self.width as f32) / 2.0 {
-            0
-        } else if vx > self.width as f32 / 2.0 {
-            self.width - 1
-        } else {
-            (vx + self.width as f32 / 2.0) as usize
-        };
-        let y = if vy < -(self.height as f32) / 2.0 {
-            0
-        } else if vy > self.height as f32 / 2.0 {
-            self.height - 1
-        } else {
-            (vy + self.height as f32 / 2.0) as usize
-        };
-        assert!(x < self.width);
-        assert!(y < self.height);
-        BufferPoint::new(x, y)
+        self.transform.apply_to_bufferpoint(&v)
     }
 }
 
@@ -129,7 +170,6 @@ impl graphics::Graphics for RgbaBufferGraphics {
     }
     fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], texture: &<Self as graphics::Graphics>::Texture, mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
         
-        use std::f32;
         f(&mut |verts: &[[f32; 2]], text_verts : &[[f32 ; 2]]| {
             let mut min_x = f32::MAX;
             let mut min_y = f32::MAX;
@@ -202,8 +242,6 @@ impl graphics::Graphics for RgbaBufferGraphics {
 
                 tri.render(self, color);
             }
-
-            println!("X: {} -> {}, Y: {} -> {}", min_x, max_x, min_y, max_y);
         })
     }
 }
