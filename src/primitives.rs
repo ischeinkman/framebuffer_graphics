@@ -156,15 +156,15 @@ impl <'tri> TextureTriangle<'tri> {
         let t3_y = self.texture_vertices[2].y as i64;
 
         // The coordinates for the framebuffer triangle's basis vectors
-        let va_x = v1_x - v3_y;
+        let va_x = v1_x - v3_x;
         let va_y = v1_y - v3_y;
-        let vb_x = v2_x - v3_y;
+        let vb_x = v2_x - v3_x;
         let vb_y = v2_y - v3_y;
 
         // the coordinates of the texture triangle's basis vectors
-        let ta_x = t1_x - t3_y;
+        let ta_x = t1_x - t3_x;
         let ta_y = t1_y - t3_y;
-        let tb_x = t2_x - t3_y;
+        let tb_x = t2_x - t3_x;
         let tb_y = t2_y - t3_y;
 
         // This value represents the square magnitude of one of the framebuffer's triangle's vector space  
