@@ -65,21 +65,27 @@ pub struct RgbaBufferGraphics {
 
 impl RgbaBufferGraphics {
     pub fn new(width: usize, height: usize, buffer: *mut u8) -> RgbaBufferGraphics {
-        RgbaBufferGraphics {
+        use graphics::Graphics;
+        let mut retval = RgbaBufferGraphics {
             width,
             height,
             buffer,
             transform : CoordinateTransform::IDENTITY,
-        }
+        };
+        retval.clear_color([0.0,1.0,0.0,1.0]);
+        retval
     }
 
     pub fn with_transform(width: usize, height: usize, buffer: *mut u8, transform : CoordinateTransform) -> RgbaBufferGraphics {
-        RgbaBufferGraphics {
+        use graphics::Graphics;
+        let mut retval = RgbaBufferGraphics {
             width,
             height,
             buffer,
             transform,
-        }
+        };
+        retval.clear_color([0.0,1.0,0.0,1.0]);
+        retval
     }
 
 
@@ -113,11 +119,11 @@ impl RgbaBufferGraphics {
         let byte_index = pixel_index * 4;
         let pixel_loc = unsafe { self.buffer.offset(byte_index as isize) };
 
-        let color = if alpha_new != 255 {
+        let alpha_old : u8 = unsafe { ptr::read(pixel_loc.offset(3isize)) };
+        let color = if alpha_new != 255 && alpha_old != 0{
             let red_old : u8 = unsafe { ptr::read(pixel_loc.offset(0isize)) };
             let green_old : u8 = unsafe { ptr::read(pixel_loc.offset(1isize)) };
             let blue_old : u8 = unsafe { ptr::read(pixel_loc.offset(2isize)) };
-            let alpha_old : u8 = unsafe { ptr::read(pixel_loc.offset(3isize)) };
 
             let alpha_new_frac = (alpha_new as f32)/(255f32);
             let alpha_old_frac = 1.0 - alpha_new_frac;
@@ -125,7 +131,7 @@ impl RgbaBufferGraphics {
             let red = ((red_new as f32 * alpha_new_frac) + (red_old as f32 * alpha_old_frac)) as u8;
             let green = ((green_new as f32 * alpha_new_frac) + (green_old as f32 * alpha_old_frac)) as u8;
             let blue = ((blue_new as f32 * alpha_new_frac) + (blue_old as f32 * alpha_old_frac)) as u8;
-            let alpha = if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
+            let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
             [red, green, blue, alpha]
 
         } else { [red_new, green_new, blue_new, alpha_new] };
