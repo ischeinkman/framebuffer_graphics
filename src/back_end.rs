@@ -128,17 +128,65 @@ impl graphics::Graphics for RgbaBufferGraphics {
         })
     }
     fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], texture: &<Self as graphics::Graphics>::Texture, mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
+        
+        use std::f32;
         f(&mut |verts: &[[f32; 2]], text_verts : &[[f32 ; 2]]| {
+            let mut min_x = f32::MAX;
+            let mut min_y = f32::MAX;
+            let mut max_x = f32::MIN;
+            let mut max_y = f32::MIN;
             for idx in 0..verts.len() / 3 {
 
                 let v1 = verts[idx * 3 + 0];
                 let v1_pt = self.vertex_to_pixel_coords(v1);
 
+                if v1[0] < min_x {
+                    min_x = v1[0];
+                }
+                else if v1[0] > max_x {
+                    max_x = v1[0];
+                }
+
+                if v1[1] < min_y {
+                    min_y = v1[1];
+                }
+                else if v1[1] > max_y {
+                    max_y = v1[1];
+                }
+
                 let v2 = verts[idx * 3 + 1];
                 let v2_pt = self.vertex_to_pixel_coords(v2);
                 
+                if v2[0] < min_x {
+                    min_x = v2[0];
+                }
+                else if v2[0] > max_x {
+                    max_x = v2[0];
+                }
+
+                if v2[1] < min_y {
+                    min_y = v2[1];
+                }
+                else if v2[1] > max_y {
+                    max_y = v2[1];
+                }
+                
                 let v3 = verts[idx * 3 + 2];
                 let v3_pt = self.vertex_to_pixel_coords(v3);
+                
+                if v1[0] < min_x {
+                    min_x = v1[0];
+                }
+                else if v1[0] > max_x {
+                    max_x = v1[0];
+                }
+
+                if v1[1] < min_y {
+                    min_y = v1[1];
+                }
+                else if v1[1] > max_y {
+                    max_y = v1[1];
+                }
 
 
                 let t1 = text_verts[idx * 3 + 0];
@@ -152,14 +200,10 @@ impl graphics::Graphics for RgbaBufferGraphics {
 
                 let tri = TextureTriangle::new((v1_pt, t1_pt), (v2_pt, t2_pt), (v3_pt, t3_pt), &texture);
 
-                println!("{:?}->{:?}=>{:?}, {:?}->{:?}=>{:?}, {:?}->{:?}=>{:?}", 
-                    idx * 3 + 0, verts[idx * 3 + 0], text_verts[idx * 3 + 0],
-                    idx * 3 + 1, verts[idx * 3 + 1], text_verts[idx * 3 + 1],
-                    idx * 3 + 2, verts[idx * 3 + 2], text_verts[idx * 3 + 2]
-                );
-
                 tri.render(self, color);
             }
+
+            println!("X: {} -> {}, Y: {} -> {}", min_x, max_x, min_y, max_y);
         })
     }
 }
