@@ -140,7 +140,10 @@ impl RgbaBufferGraphics {
 
         } else { (red_new, green_new, blue_new, alpha_new) };
 
-        println!("Writing {} => {}, {} => {}, {} => {}, {} => {}", red_idx, red, green_idx, green, blue_idx, blue, alpha_idx, alpha);
+        println!("red : {} => {}", red_idx, red);
+        println!("green : {} => {}", green_idx, green);
+        println!("blue : {} => {}", blue_idx, blue);
+        println!("alpha : {} => {}", alpha_idx, alpha);
 
         unsafe {
             ptr::write(self.buffer.offset(red_idx), red);
