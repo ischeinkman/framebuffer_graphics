@@ -82,8 +82,6 @@ impl RgbaTexture {
         } else {
             (vy + self.height as f32 / 2.0) as u32
         };
-        assert!(x < self.width);
-        assert!(y < self.height);
         BufferPoint::new(x as usize, y as usize)
     }
 

@@ -92,13 +92,14 @@ impl RgbaBufferGraphics {
 
     #[inline]
     pub fn coords_to_pixel_index(&self, p: &BufferPoint) -> usize {
-        assert!(p.x < self.width);
-        assert!(p.y < self.height);
         p.x + p.y * self.width
     }
 
     #[inline]
     pub fn write_color(&mut self, pixel_index : usize, color : &types::Color) {
+        if pixel_index > self.width * self.height - 1 {
+            return;
+        }
         let converted_color = [
             piston_color_channel_to_byte(color[0]),
             piston_color_channel_to_byte(color[1]),
@@ -115,6 +116,10 @@ impl RgbaBufferGraphics {
         let green_new = color[1];
         let blue_new = color [2];
         let alpha_new = color[3];
+
+        if alpha_new == 0 {
+            return;
+        }
             
         let byte_index = pixel_index * 4;
         let pixel_loc = unsafe { self.buffer.offset(byte_index as isize) };
