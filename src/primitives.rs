@@ -155,49 +155,47 @@ impl <'tri> TextureTriangle<'tri> {
         let t3_x = self.texture_vertices[2].x as i64;
         let t3_y = self.texture_vertices[2].y as i64;
 
+        println!("Mapping point ({}, {}) to texture point ({}, {}).", v1_x, v1_y, t1_x, t1_y);
+        println!("Mapping point ({}, {}) to texture point ({}, {}).", v2_x, v2_y, t2_x, t2_y);
+        println!("Mapping point ({}, {}) to texture point ({}, {}).", v3_x, v3_y, t3_x, t3_y);
+
         // The coordinates for the framebuffer triangle's basis vectors
         let va_x = v1_x - v3_x;
         let va_y = v1_y - v3_y;
         let vb_x = v2_x - v3_x;
         let vb_y = v2_y - v3_y;
 
+        println!("Frambuffer basis: ({}, {}) x ({}, {}) at origin ({}, {})", va_x, va_y, vb_x, vb_y, v3_x, v3_y);
+
         // the coordinates of the texture triangle's basis vectors
         let ta_x = t1_x - t3_x;
         let ta_y = t1_y - t3_y;
         let tb_x = t2_x - t3_x;
         let tb_y = t2_y - t3_y;
-
-        // This value represents the square magnitude of one of the framebuffer's triangle's vector space  
-        let mag2_va = va_x * va_x + va_y * va_y;
         
-        // This value represents the square magnitude of the other of the framebuffer's triangle's vector space  
-        let mag2_vb = vb_x * vb_x + vb_y * vb_y;
+        println!("Texture basis: ({}, {}) x ({}, {}) at origin ({}, {})", ta_x, ta_y, tb_x, tb_y, t3_x, t3_y);
 
-        // We treat the third vertice of both the texture triangle and the framebuffer triangle as 
-        // the origin of our new vector space. Therefore it is also useful to pre-calculate some related dot products
-        // so we aren't doing it per-pixel. 
-        let mag2_v3 = v3_x * v3_x + v3_y * v3_y;
-        let v1_dot_v3 = v1_x * v3_x + v1_y + v3_y; 
-        let v2_dot_v3 = v2_x * v3_x + v2_y + v3_y;
-
-
-        // This is the closure that maps the framebuffer coordinate to the texture coordinate via a forward and inverse 
-        // projection. 
         let mapper = | framebuffer_x : usize, framebuffer_y : usize | {
+            
+            println!("Mapping point ({}, {})", framebuffer_x, framebuffer_y);
 
-            let x = framebuffer_x as i64; 
-            let y = framebuffer_y as i64;
+            let a_coeff_bottom = (va_x * va_x + va_y + va_y) as f64;
+            let a_coeff_top = (va_x * (framebuffer_x as i64 - v3_x) + va_y * (framebuffer_y as i64 - v3_y)) as f64;
+            let a_coeff = a_coeff_top/a_coeff_bottom;
 
-            // These are the coefficient for the basis vectors in the texture's triangle space, 
-            // derived from projecting (x, y) onto va and vb and then scaling by another multiple of the basis's lengths
-            // so we maintain streching.
-            // Note that these will be scaled down by the mag2's of the triangle basis vectors when we multiply later 
-            // to avoid any fractional issues. 
-            let coeff_a = mag2_v3 - v1_dot_v3 + va_x * x + va_y * y;
-            let coeff_b = mag2_v3 - v2_dot_v3 + vb_x * x + vb_y * y;
+            println!("Got first term coefficient of {}.", a_coeff);
+            
+            let b_coeff_bottom = (vb_x * vb_x + vb_y + vb_y) as f64;
+            let b_coeff_top = (vb_x * (framebuffer_x as i64 - v3_x) + vb_y * (framebuffer_y as i64 - v3_y)) as f64;
+            let b_coeff = b_coeff_top/b_coeff_bottom;
+            
+            println!("Got second term coefficient of {}.", b_coeff);
 
-            let x_component = (coeff_a * ta_x)/mag2_va + (coeff_b * tb_x)/mag2_vb + t3_x;
-            let y_component = (coeff_a * ta_y)/mag2_va + (coeff_b * tb_y)/mag2_vb + t3_y;
+
+            let x_component = a_coeff.ceil() as i64 * ta_x + b_coeff.ceil() as i64 * tb_x + t3_x;
+            let y_component = a_coeff.ceil() as i64 * ta_y + b_coeff.ceil() as i64 * tb_y + t3_y;
+
+            println!("Mapped ({}, {}) to texture point ({}, {})", framebuffer_x, framebuffer_y, x_component, y_component);
 
 
             (x_component as u32, y_component as u32)
