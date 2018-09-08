@@ -121,28 +121,32 @@ impl RgbaBufferGraphics {
             return;
         }
             
-        let byte_index = pixel_index * 4;
-        let pixel_loc = unsafe { self.buffer.offset(byte_index as isize) };
+        let red_idx = pixel_index as isize * 4;
+        let green_idx = red_idx + 1;
+        let blue_idx = green_idx + 1;
+        let alpha_idx = blue_idx + 1;
 
-        let alpha_old : u8 = unsafe { ptr::read(pixel_loc.offset(3isize)) };
-        let color = if alpha_new != 255 && alpha_old != 0{
-            let red_old : u8 = unsafe { ptr::read(pixel_loc) };
-            let green_old : u8 = unsafe { ptr::read(pixel_loc.offset(1isize)) };
-            let blue_old : u8 = unsafe { ptr::read(pixel_loc.offset(2isize)) };
+        let alpha_old : u8 = unsafe { ptr::read(self.buffer.offset(alpha_idx)) };
+        let (red, green, blue, alpha) = if alpha_new != 255 && alpha_old != 0{
+            let red_old : u8 = unsafe { ptr::read(self.buffer.offset(red_idx)) };
+            let green_old : u8 = unsafe { ptr::read(self.buffer.offset(green_idx)) };
+            let blue_old : u8 = unsafe { ptr::read(self.buffer.offset(blue_idx)) };
 
             let red = ((red_new as u16 * alpha_new as u16 + red_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let alpha = 128;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
-            [red, green, blue, alpha]
+            (red, green, blue, alpha)
 
-        } else { [red_new, green_new, blue_new, alpha_new] };
+        } else { (red_new, green_new, blue_new, alpha_new) };
 
-        for idx in 0 .. 4 {
-            unsafe {
-                let buff_idx = pixel_loc.offset(idx as isize);
-                ptr::write(buff_idx, color[idx]);
-            }
+        println!("Writing {} => {}, {} => {}, {} => {}, {} => {}", red_idx, red, green_idx, green, blue_idx, blue, alpha_idx, alpha);
+
+        unsafe {
+            ptr::write(self.buffer.offset(red_idx), red);
+            ptr::write(self.buffer.offset(green_idx), green);
+            ptr::write(self.buffer.offset(blue_idx), blue);
+            ptr::write(self.buffer.offset(alpha_idx), alpha);
         }
     }
 
@@ -155,7 +159,6 @@ impl RgbaBufferGraphics {
 impl graphics::Graphics for RgbaBufferGraphics {
     type Texture = RgbaTexture;
     fn clear_color(&mut self, color: types::Color) {
-        println!("Clearing with color {:?}", color);
         let num_pixels = self.width * self.height;
         for i in 0..num_pixels {
             self.write_color(i, &color);
@@ -165,7 +168,6 @@ impl graphics::Graphics for RgbaBufferGraphics {
         //TODO:this
     }
     fn tri_list<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]])) {
-        println!("Drawing with color: {:?}", color);
         f(&mut |verts: &[[f32; 2]]| {
             for t in 0..verts.len() / 3 {
                 let v1 = verts[t * 3];
@@ -179,8 +181,6 @@ impl graphics::Graphics for RgbaBufferGraphics {
         })
     }
     fn tri_list_uv<F>(&mut self, _draw_state: &graphics::DrawState, color: &[f32; 4], texture: &<Self as graphics::Graphics>::Texture, mut f: F) where F: FnMut(&mut FnMut(&[[f32; 2]], &[[f32; 2]])) {
-        println!("Drawing texture with color: {:?}", color);
-        
         f(&mut |verts: &[[f32; 2]], text_verts : &[[f32 ; 2]]| {
             for idx in 0..verts.len() / 3 {
 
