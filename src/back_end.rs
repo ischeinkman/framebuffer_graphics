@@ -72,7 +72,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform : CoordinateTransform::IDENTITY,
         };
-        retval.clear_color([0.0,1.0,0.0,0.0]);
+        retval.clear_color([0.0,1.0,0.0,1.0]);
         retval
     }
 
@@ -84,7 +84,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform,
         };
-        retval.clear_color([0.0,1.0,0.0,0.0]);
+        retval.clear_color([0.0,1.0,0.0,1.0]);
         retval
     }
 
@@ -113,6 +113,10 @@ impl RgbaBufferGraphics {
         let green_new = color[1];
         let blue_new = color [2];
         let alpha_new = color[3];
+
+        if alpha_new < 10 {
+            return;
+        }
             
         let red_idx = (pixel_index * 4) as isize;
         let green_idx = red_idx + 1;
@@ -126,9 +130,11 @@ impl RgbaBufferGraphics {
             let green_old : u8 = unsafe { ptr::read(self.buffer.offset(green_idx)) };
             let blue_old : u8 = unsafe { ptr::read(self.buffer.offset(blue_idx)) };
 
-            let red = ((red_new as u16 * alpha_new as u16 + red_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
-            let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
-            let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
+            let old_frac = 255 - alpha_new;
+
+            let red = ((red_new as u16 * alpha_new as u16 + red_old as u16 * old_frac as u16) / (255 as u16)) as u8;
+            let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * old_frac as u16) / (255 as u16)) as u8;
+            let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * old_frac as u16) / (255 as u16)) as u8;
             let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
 
             (255 - red, 255 - green, 255 - blue, alpha)
