@@ -121,12 +121,13 @@ impl RgbaBufferGraphics {
             return;
         }
             
-        let red_idx = pixel_index as isize * 4;
+        let red_idx = (pixel_index * 4) as isize;
         let green_idx = red_idx + 1;
         let blue_idx = green_idx + 1;
         let alpha_idx = blue_idx + 1;
 
         let alpha_old : u8 = unsafe { ptr::read(self.buffer.offset(alpha_idx)) };
+
         let (red, green, blue, alpha) = if alpha_new != 255 && alpha_old != 0{
             let red_old : u8 = unsafe { ptr::read(self.buffer.offset(red_idx)) };
             let green_old : u8 = unsafe { ptr::read(self.buffer.offset(green_idx)) };
@@ -135,15 +136,16 @@ impl RgbaBufferGraphics {
             let red = ((red_new as u16 * alpha_new as u16 + red_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
-            let alpha = 128;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
+            let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
             (red, green, blue, alpha)
 
         } else { (red_new, green_new, blue_new, alpha_new) };
 
-        println!("red : {} => {}", red_idx, red);
-        println!("green : {} => {}", green_idx, green);
-        println!("blue : {} => {}", blue_idx, blue);
-        println!("alpha : {} => {}", alpha_idx, alpha);
+        println!("P: {} ({}, {}) -> {}", pixel_index, pixel_index/self.width, pixel_index % self.width, red_idx);
+        println!("R: {} => {}", red_idx, red);
+        println!("G: {} => {}", green_idx, green);
+        println!("B: {} => {}", blue_idx, blue);
+        println!("A: {} => {}", alpha_idx, alpha);
 
         unsafe {
             ptr::write(self.buffer.offset(red_idx), red);
