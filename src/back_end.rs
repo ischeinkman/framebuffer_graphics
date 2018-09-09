@@ -72,7 +72,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform : CoordinateTransform::IDENTITY,
         };
-        retval.clear_color([0.0,1.0,0.0,1.0]);
+        retval.clear_color([0.0,0.0,0.0,0.0]);
         retval
     }
 
@@ -84,7 +84,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform,
         };
-        retval.clear_color([0.0,1.0,0.0,1.0]);
+        retval.clear_color([0.0,0.0,0.0,0.0]);
         retval
     }
 
@@ -128,7 +128,7 @@ impl RgbaBufferGraphics {
 
         let alpha_old : u8 = unsafe { ptr::read(self.buffer.offset(alpha_idx)) };
 
-        let (red, green, blue, alpha) = if alpha_new != 255 && alpha_old != 0{
+        let (red, green, blue, alpha) = if alpha_new != 255 && alpha_old != 0 {
             let red_old : u8 = unsafe { ptr::read(self.buffer.offset(red_idx)) };
             let green_old : u8 = unsafe { ptr::read(self.buffer.offset(green_idx)) };
             let blue_old : u8 = unsafe { ptr::read(self.buffer.offset(blue_idx)) };
@@ -137,15 +137,14 @@ impl RgbaBufferGraphics {
             let green = ((green_new as u16 * alpha_new as u16 + green_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
+
+            println!("R {}: {} + {} => {}", red_idx, red_old, red_new, red);
+            println!("G {}: {} + {} => {}", blue_idx, blue_old, blue_new, blue);
+            println!("B {}: {} + {} => {}", green_idx, green_old, green_new, green);
+            println!("A {}: {} + {} => {}", alpha_idx, alpha_old, alpha_new, alpha);
             (red, green, blue, alpha)
 
         } else { (red_new, green_new, blue_new, alpha_new) };
-
-        println!("P: {} ({}, {}) -> {}", pixel_index, pixel_index/self.width, pixel_index % self.width, red_idx);
-        println!("R: {} => {}", red_idx, red);
-        println!("G: {} => {}", green_idx, green);
-        println!("B: {} => {}", blue_idx, blue);
-        println!("A: {} => {}", alpha_idx, alpha);
 
         unsafe {
             ptr::write(self.buffer.offset(red_idx), red);

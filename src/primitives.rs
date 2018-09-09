@@ -142,6 +142,8 @@ impl <'tri> TextureTriangle<'tri> {
 #[inline]
 fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphics, pixel_mapper : &Fn(usize, usize) -> [u8 ; 4]) {
 
+    println!("T: ({}, {}), ({}, {}), ({}, {})", points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
+
     // Sort the points into bottom, middle, and top.
     let (bottom, mid, top) = if points[0].y < points[1].y && points[0].y < points[2].y {
         if points[1].y < points[2].y {
