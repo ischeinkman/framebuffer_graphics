@@ -139,8 +139,8 @@ impl RgbaBufferGraphics {
             let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
 
             println!("R {}: {} + {} => {}", red_idx, red_old, red_new, red);
-            println!("G {}: {} + {} => {}", blue_idx, blue_old, blue_new, blue);
-            println!("B {}: {} + {} => {}", green_idx, green_old, green_new, green);
+            println!("G {}: {} + {} => {}", green_idx, green_old, green_new, green);
+            println!("B {}: {} + {} => {}", blue_idx, blue_old, blue_new, blue);
             println!("A {}: {} + {} => {}", alpha_idx, alpha_old, alpha_new, alpha);
             (red, green, blue, alpha)
 
