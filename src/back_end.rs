@@ -92,7 +92,7 @@ impl RgbaBufferGraphics {
 
     #[inline]
     pub fn coords_to_pixel_index(&self, p: &BufferPoint) -> usize {
-        p.y + p.x * self.height
+        p.y + (self.width - p.x) * self.height
     }
 
     #[inline]
@@ -137,9 +137,9 @@ impl RgbaBufferGraphics {
             let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * old_frac as u16) / (255 as u16)) as u8;
             let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
 
-            (255 - red, 255 - green, 255 - blue, alpha)
+            (red, green, blue, alpha)
 
-        } else { (255 - red_new, 255 - green_new, 255 - blue_new, alpha_new) };
+        } else { (red_new, green_new, blue_new, alpha_new) };
 
         unsafe {
             ptr::write(self.buffer.offset(red_idx), red);
