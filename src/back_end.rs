@@ -139,7 +139,7 @@ impl RgbaBufferGraphics {
 
             (red, green, blue, alpha)
 
-        } else { (red_new, green_new, blue_new, alpha_new) };
+        } else { (255 - red_new, 255 - green_new, 255 - blue_new, alpha_new) };
 
         unsafe {
             ptr::write(self.buffer.offset(red_idx), red);
