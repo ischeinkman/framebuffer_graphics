@@ -186,9 +186,6 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
             let x2 = ((shifted_y * inv_slope_btm_top) + bottom.x as f32).round() as usize;
 
             let (xmax, xmin) = if x1 > x2 {(x1, x2)} else {(x2, x1)};
-            let idx_min = graphics.coords_to_pixel_index(&BufferPoint::new(xmin, y));
-            let idx_max = graphics.coords_to_pixel_index(&BufferPoint::new(xmax, y));
-            println!("A {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
             al+=1;
             for x in xmin - 1 .. xmax + 1 {
                 ap+=1;
@@ -213,9 +210,6 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
             let x2 = ((shifted_y * inv_slope_top_mid) + top.x as f32).round() as usize;
 
             let (xmax, xmin) = if x1 > x2 {(x1, x2)} else {(x2, x1)};
-            let idx_min = graphics.coords_to_pixel_index(&BufferPoint::new(xmin, y));
-            let idx_max = graphics.coords_to_pixel_index(&BufferPoint::new(xmax, y));
-            println!("B {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
 
             bl += 1;
             for x in xmin -1 .. xmax + 1 {
