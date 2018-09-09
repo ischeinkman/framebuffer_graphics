@@ -170,6 +170,8 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
         }
     };
 
+    let mut al = 0;
+    let mut ap = 0;
     // We split the larger triangle into 2 along the middle point's y line.
     if bottom.y != mid.y {
 
@@ -186,8 +188,10 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
             let (xmax, xmin) = if x1 > x2 {(x1, x2)} else {(x2, x1)};
             let idx_min = graphics.coords_to_pixel_index(&BufferPoint::new(xmin, y));
             let idx_max = graphics.coords_to_pixel_index(&BufferPoint::new(xmax, y));
-            println!("L {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
-            for x in xmin .. xmax + 1{
+            println!("A {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
+            al+=1;
+            for x in xmin - 1 .. xmax + 1 {
+                ap+=1;
                 let idx = graphics.coords_to_pixel_index(&BufferPoint::new(x, y));
                 let clr = pixel_mapper(x, y);
                 graphics.write_color_bytes(idx, clr);
@@ -195,6 +199,8 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
         }
     }
 
+    let mut bl = 0;
+    let mut bp = 0;
     if mid.y != top.y {
 
         // Same thing as before, except for the upper sub-triangle we center the system on the top point.
@@ -209,13 +215,16 @@ fn render_triangle(points : [BufferPoint ; 3], graphics : &mut RgbaBufferGraphic
             let (xmax, xmin) = if x1 > x2 {(x1, x2)} else {(x2, x1)};
             let idx_min = graphics.coords_to_pixel_index(&BufferPoint::new(xmin, y));
             let idx_max = graphics.coords_to_pixel_index(&BufferPoint::new(xmax, y));
-            println!("L {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
+            println!("B {}: {} -> {} => {} -> {}", y, xmin, xmax, idx_min, idx_max);
 
-            for x in xmin .. xmax + 1 {
+            bl += 1;
+            for x in xmin -1 .. xmax + 1 {
                 let idx = graphics.coords_to_pixel_index(&BufferPoint::new(x, y));
                 let clr = pixel_mapper(x, y);
                 graphics.write_color_bytes(idx, clr);
+                bp += 1;
             }
         }
     }
+    println!("T fin: {}+{} = {}, {}+{} = {}.", al, bl, al+bl, ap, bp, ap+bp);
 }

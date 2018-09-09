@@ -27,8 +27,8 @@ impl CoordinateTransform {
     }
 
     pub fn apply_to_bufferpoint(&self, vect : &[f32 ; 2]) -> BufferPoint {
-        let x = vect[0];
-        let y = vect[1];
+        let x = vect[1];
+        let y = vect[0];
 
         let x_out = x * self.matrix_transform[0] + y * self.matrix_transform[1] + self.translation[0]; 
         let y_out = x * self.matrix_transform[2] + y * self.matrix_transform[3] + self.translation[1];
@@ -72,7 +72,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform : CoordinateTransform::IDENTITY,
         };
-        retval.clear_color([0.0,0.0,0.0,0.0]);
+        retval.clear_color([0.0,0.01,0.0,0.01]);
         retval
     }
 
@@ -84,7 +84,7 @@ impl RgbaBufferGraphics {
             buffer,
             transform,
         };
-        retval.clear_color([0.0,0.0,0.0,0.0]);
+        retval.clear_color([0.0,0.01,0.0,0.01]);
         retval
     }
 
@@ -97,9 +97,6 @@ impl RgbaBufferGraphics {
 
     #[inline]
     pub fn write_color(&mut self, pixel_index : usize, color : &types::Color) {
-        if pixel_index > self.width * self.height - 1 {
-            return;
-        }
         let converted_color = [
             piston_color_channel_to_byte(color[0]),
             piston_color_channel_to_byte(color[1]),
