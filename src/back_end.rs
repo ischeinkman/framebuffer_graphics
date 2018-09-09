@@ -138,10 +138,6 @@ impl RgbaBufferGraphics {
             let blue = ((blue_new as u16 * alpha_new as u16 + blue_old as u16 * alpha_old as u16) / (alpha_new as u16 + alpha_old as u16)) as u8;
             let alpha = 255;//if alpha_old > 255 - alpha_new { 255 } else { alpha_old + alpha_new};
 
-            println!("R {}: {} + {} => {}", red_idx, red_old, red_new, red);
-            println!("G {}: {} + {} => {}", green_idx, green_old, green_new, green);
-            println!("B {}: {} + {} => {}", blue_idx, blue_old, blue_new, blue);
-            println!("A {}: {} + {} => {}", alpha_idx, alpha_old, alpha_new, alpha);
             (red, green, blue, alpha)
 
         } else { (red_new, green_new, blue_new, alpha_new) };
