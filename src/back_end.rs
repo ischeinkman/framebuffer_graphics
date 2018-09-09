@@ -27,8 +27,8 @@ impl CoordinateTransform {
     }
 
     pub fn apply_to_bufferpoint(&self, vect : &[f32 ; 2]) -> BufferPoint {
-        let x = vect[1];
-        let y = vect[0];
+        let x = vect[0];
+        let y = vect[1];
 
         let x_out = x * self.matrix_transform[0] + y * self.matrix_transform[1] + self.translation[0]; 
         let y_out = x * self.matrix_transform[2] + y * self.matrix_transform[3] + self.translation[1];
@@ -92,7 +92,7 @@ impl RgbaBufferGraphics {
 
     #[inline]
     pub fn coords_to_pixel_index(&self, p: &BufferPoint) -> usize {
-        p.x + p.y * self.width
+        p.y + p.x * self.height
     }
 
     #[inline]
